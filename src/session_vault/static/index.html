@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChatGPT Session Vault — Keep the conversation.</title>
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Session Vault home"><img src="/static/icon.svg" alt="" width="30" height="30"> SESSION VAULT</a>
+      <div class="top-actions"><span class="local"><span class="dot"></span> Running locally</span><button class="text-button" id="lang">中文</button><a href="https://github.com/GitZhangChi/chatgpt-session-vault" target="_blank" rel="noreferrer">GitHub ↗</a></div>
+    </header>
+    <main>
+      <div class="hero"><div class="eyebrow" data-i18n="eyebrow">YOUR IDEAS DESERVE A HOME</div><h1 data-i18n="headline">Keep the conversation.</h1><p data-i18n="intro">Turn your ChatGPT history into beautiful PDFs.<br>Save locally. Take it to Drive. Keep it yours.</p></div>
+      <div class="workspace">
+        <aside class="sidebar">
+          <section class="card connection">
+            <div class="section-title"><span class="step">01</span><h2 data-i18n="connectTitle">Connect your ChatGPT</h2></div>
+            <p class="muted" data-i18n="cookieHelp">Paste the Cookie request header from your signed-in ChatGPT browser.</p>
+            <form id="connect-form">
+              <label for="cookie" data-i18n="cookieLabel">ChatGPT Cookie</label>
+              <textarea id="cookie" rows="5" placeholder="__Secure-next-auth.session-token=…; …" spellcheck="false" autocomplete="off" required></textarea>
+              <details><summary data-i18n="advanced">Advanced options</summary><label for="user-agent">User-Agent</label><input id="user-agent" placeholder="Optional: match your browser" autocomplete="off"><label for="account-id" data-i18n="workspace">Workspace ID (optional)</label><input id="account-id" placeholder="ChatGPT-Account-ID" autocomplete="off"></details>
+              <button class="button primary full" id="connect" type="submit" data-i18n="connect">Connect ChatGPT →</button>
+            </form>
+            <div id="connected-panel" hidden><div class="connected-line"><span class="dot"></span><span data-i18n="connected">ChatGPT connected</span></div><button id="disconnect" class="button subtle full" data-i18n="disconnect">Disconnect & forget credentials</button></div>
+            <div class="privacy-note"><span>⌁</span><span data-i18n="privacy">Cookie stays in memory on this computer. Never saved to disk, browser storage, or a third-party server.</span></div>
+            <details class="instructions"><summary data-i18n="howCookie">Where do I find my Cookie?</summary><ol><li data-i18n="cookie1">Open chatgpt.com and sign in.</li><li data-i18n="cookie2">Open DevTools → Network. Reload the page.</li><li data-i18n="cookie3">Select a request to chatgpt.com → Headers → Request Headers → Cookie. Copy its value here.</li></ol></details>
+          </section>
+          <section class="card drive-card">
+            <div class="section-title"><span class="step">↗</span><h2 data-i18n="driveTitle">A home in Google Drive</h2></div>
+            <p class="muted" data-i18n="driveHelp">Optional. Connect with your own Google OAuth Desktop client JSON.</p>
+            <label class="button subtle full file-button"><span id="drive-label" data-i18n="driveConnect">Connect Google Drive</span><input id="google-client" type="file" accept=".json,application/json" hidden></label>
+            <p class="tiny">ChatGPT / Session Archives /</p><a class="small-link" href="https://github.com/GitZhangChi/chatgpt-session-vault#google-drive-setup" target="_blank" rel="noreferrer" data-i18n="setupGuide">Setup guide ↗</a>
+          </section>
+        </aside>
+        <section class="card library">
+          <div class="library-heading"><div><div class="section-title"><span class="step">02</span><h2 data-i18n="libraryTitle">Your conversations</h2></div><p class="muted" data-i18n="libraryHelp">Choose the conversations worth keeping.</p></div><span class="count-pill" id="count">0 chats</span></div>
+          <div class="toolbar"><label class="limit-label"><span data-i18n="recent">Recent</span><input id="limit" type="number" min="1" max="500" value="5" aria-label="Number of recent conversations"></label><label class="archive-toggle"><input id="archived" type="checkbox"><span data-i18n="archived">Archived only</span></label><button id="load" class="button subtle" disabled data-i18n="load">Load chats</button></div>
+          <div id="empty" class="empty"><div class="empty-icon">▤</div><h3 data-i18n="emptyTitle">A little space for big ideas.</h3><p data-i18n="emptyHelp">Connect ChatGPT to find your latest conversations.<br>Your next archive starts here.</p><div class="format-tags"><span>PDF</span><span>MARKDOWN</span><span>JSON</span></div></div>
+          <div id="conversation-list" hidden><div class="selection-row"><label><input id="select-all" type="checkbox" checked><span data-i18n="selectAll">Select all</span></label><span class="tiny" data-i18n="sorted">Recently updated first · UTC</span></div><div id="rows"></div></div>
+          <div class="export-bar"><div><strong id="selected">0 selected</strong><p class="tiny" data-i18n="formats">One PDF per chat + Markdown & JSON backup</p></div><button id="export" class="button primary" disabled data-i18n="export">Create archive ↓</button></div>
+          <section id="progress" class="progress-panel" hidden aria-live="polite"><div class="progress-top"><strong id="progress-title"></strong><span id="progress-count"></span></div><progress id="progress-meter" max="1" value="0"></progress><div id="results"></div></section>
+        </section>
+      </div>
+      <div id="notice" class="notice" role="alert" hidden></div>
+    </main>
+    <footer><span data-i18n="footer">Made for the conversations you want to keep.</span><span>LOCAL FIRST · OPEN SOURCE · NO API KEY</span></footer>
+  </div>
+</body>
+</html>
