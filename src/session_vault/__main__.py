@@ -36,6 +36,9 @@ def parser() -> argparse.ArgumentParser:
             "--user-agent", default="", help="Match your browser if ChatGPT returns 403"
         )
         sub.add_argument("--account-id", default="", help="Optional ChatGPT workspace/account ID")
+        sub.add_argument(
+            "--proxy", default="", help="Explicit HTTP(S)/SOCKS5 proxy; direct by default"
+        )
         sub.add_argument("--limit", type=int, default=5, help="Most recently updated chats (1-500)")
         sub.add_argument("--archived", action="store_true", help="Read archived chats instead")
         if name == "list":
@@ -81,7 +84,7 @@ def main() -> None:
             raw = getpass.getpass("Paste ChatGPT Cookie (hidden): ")
         else:
             raise VaultError("Use --cookie-stdin or --cookie-file when stdin is not interactive.")
-        client = ChatGPTClient(parse_cookies(raw), args.user_agent, args.account_id)
+        client = ChatGPTClient(parse_cookies(raw), args.user_agent, args.account_id, args.proxy)
         raw = ""
         client.authenticate()
         if args.command == "list":
@@ -121,7 +124,7 @@ def main() -> None:
             )
             raise SystemExit(2)
     except VaultError as error:
-        print(f"Error: {error}", file=sys.stderr)
+        print(f"Error [{error.code}]: {error}", file=sys.stderr)
         raise SystemExit(1) from None
     except (OSError, ValueError):
         print(

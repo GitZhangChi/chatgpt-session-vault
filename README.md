@@ -28,6 +28,7 @@ No need to print each chat manually. No need to upload your Cookie to a hosted e
 - **Cookie to archive:** paste a ChatGPT Cookie request header or supply a cookie JSON export.
 - **Batch export:** get the latest N chats, select specific chats, or export by conversation UUID.
 - **Readable PDFs:** headings, highlighted code, tables, Unicode text, and locally rendered LaTeX math.
+- **Static ChatGPT layouts:** common box/grid cards, literal math components and safe inline SVG shapes render in PDF. JSX expressions are never executed.
 - **Portable backups:** PDF + Markdown + original conversation JSON for every chat, plus one ZIP.
 - **Branch-aware:** render the currently selected conversation branch instead of mixing regenerated answers.
 - **Export manifest:** message counts, explicit missing-content warnings, per-chat failures and SHA-256 hashes.
@@ -67,6 +68,15 @@ Cookie JSON arrays from browser cookie exporters and `{ "cookie-name": "value" }
 
 **Your session Cookie grants access to your account. Never paste it into GitHub issues, screenshots, public websites, or chat messages.** Paste it only into the locally running tool.
 
+### Connection errors and browser verification
+
+- **`cloudflare_challenge` (403):** Cloudflare returned a browser verification page. This does not prove your Cookie expired. Open ChatGPT in your normal browser, complete any verification, then copy fresh cookies and the matching User-Agent. Use the same computer/network/proxy. Vault stops rather than repeatedly retrying or attempting to solve the challenge.
+- **`session_expired` (401 / login redirect):** sign in again and copy a fresh Cookie.
+- **`access_denied` (other 403):** check that the account/workspace can open the conversation in your browser. A new Cookie cannot grant missing permissions.
+- **Network errors:** Vault connects directly by default. If your browser requires a proxy, set CLI `--proxy http://127.0.0.1:8080` (replace with your own port), or set Proxy in the web UI's Advanced options. Proxy URLs must not contain usernames/passwords; use a trusted, unauthenticated local proxy.
+
+The same cookies may work once and later receive a challenge. This is an upstream access restriction; Vault cannot guarantee cookie-only access or fully unattended exports.
+
 ## CLI
 
 The default CLI flow prompts for your Cookie **without echoing it**. Secret values are deliberately not accepted as command-line arguments.
@@ -92,6 +102,9 @@ your-secret-reader | uv run session-vault export --cookie-stdin --limit 5
 
 # macOS: read the clipboard without putting the Cookie in shell history
 pbpaste | uv run session-vault export --cookie-stdin --limit 5
+
+# Match a browser using a local proxy (example port; use your own settings)
+pbpaste | uv run session-vault export --cookie-stdin --limit 5 --proxy http://127.0.0.1:8080
 
 # Export archived conversations instead of active chats
 uv run session-vault export --archived --limit 10
@@ -164,7 +177,7 @@ Local files you supply remain your responsibility. Keep credential files outside
 This project uses **unofficial ChatGPT web endpoints**, not the OpenAI developer API. It is not affiliated with OpenAI. Endpoints and response shapes can change. A valid Cookie may still be rejected by ChatGPT's browser/session protection; compatibility is not guaranteed, and Vault does not solve or bypass interactive challenges.
 
 - **Text-first archive:** PDF/Markdown preserve visible user/assistant text on the selected branch. Other message-tree branches remain in the original JSON.
-- **No attachment downloader yet:** images, audio and uploaded/generated binary files are not embedded. Known missing content gets a placeholder or manifest warning. Canvas, Deep Research and other specialized content may not be fully represented.
+- **No attachment downloader yet:** external images, audio and uploaded/generated binary files are not embedded. Safe inline SVG shapes and a static subset of ChatGPT box/grid/math cards are rendered; unsupported markup remains visible as text. Known missing content gets a placeholder or manifest warning. Canvas, Deep Research and other specialized content may not be fully represented.
 - **Math and tables:** common Markdown, `$…$`, `$$…$$`, `\(…\)` and `\[…\]` math are supported. Very wide tables and long equations may need layout improvements; unsupported TeX is left visibly marked by KaTeX.
 - **Completeness boundary:** Vault validates the returned message tree, follows `current_node` and refuses missing/cyclic branches. It cannot prove that the server returned content it omitted. There is no DOM-scraping fallback claiming to be a full backup.
 - **No scheduler:** commands run on demand. No always-on agent, browser extension, or background service is installed.

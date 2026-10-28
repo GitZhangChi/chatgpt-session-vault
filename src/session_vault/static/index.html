@@ -24,7 +24,7 @@
             <form id="connect-form">
               <label for="cookie" data-i18n="cookieLabel">ChatGPT Cookie</label>
               <textarea id="cookie" rows="5" placeholder="__Secure-next-auth.session-token=…; …" spellcheck="false" autocomplete="off" required></textarea>
-              <details><summary data-i18n="advanced">Advanced options</summary><label for="user-agent">User-Agent</label><input id="user-agent" placeholder="Optional: match your browser" autocomplete="off"><label for="account-id" data-i18n="workspace">Workspace ID (optional)</label><input id="account-id" placeholder="ChatGPT-Account-ID" autocomplete="off"></details>
+              <details><summary data-i18n="advanced">Advanced options</summary><label for="proxy" data-i18n="proxy">Proxy (optional)</label><input id="proxy" placeholder="http://127.0.0.1:8080" autocomplete="off"><label for="user-agent">User-Agent</label><input id="user-agent" placeholder="Optional: match your browser" autocomplete="off"><label for="account-id" data-i18n="workspace">Workspace ID (optional)</label><input id="account-id" placeholder="ChatGPT-Account-ID" autocomplete="off"></details>
               <button class="button primary full" id="connect" type="submit" data-i18n="connect">Connect ChatGPT →</button>
             </form>
             <div id="connected-panel" hidden><div class="connected-line"><span class="dot"></span><span data-i18n="connected">ChatGPT connected</span></div><button id="disconnect" class="button subtle full" data-i18n="disconnect">Disconnect & forget credentials</button></div>

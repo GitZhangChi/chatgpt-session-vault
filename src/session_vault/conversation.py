@@ -81,6 +81,12 @@ def parse_conversation(data: dict, cid: str) -> Conversation:
         if message.get("recipient", "all") not in (None, "all"):
             continue
         content = message.get("content") or {}
+        if content.get("content_type") == "reasoning_recap":
+            # A visible duration/status string, not a missing binary attachment.
+            recap = content.get("content")
+            if isinstance(recap, str) and recap.strip():
+                messages.append(Message(role, recap.strip(), timestamp(message.get("create_time"))))
+            continue
         parts = content.get("parts", [])
         texts = []
         for part in parts:
@@ -103,6 +109,10 @@ def parse_conversation(data: dict, cid: str) -> Conversation:
             texts.append(f"[Non-text content: {content['content_type']}; not downloaded]")
             warnings.append("Some non-text content could not be exported.")
         text = "\n\n".join(texts).strip()
+        if re.search(r"<(?:box|grid|grid-item|svg)\b", text):
+            warnings.append(
+                "ChatGPT layouts use a static card/SVG subset; unsupported markup stays as text."
+            )
         if text:
             messages.append(Message(role, text, timestamp(message.get("create_time"))))
         if message.get("status") not in (None, "finished_successfully"):

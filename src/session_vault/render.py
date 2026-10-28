@@ -2,6 +2,7 @@
 
 import html
 import json
+import re
 from pathlib import Path
 
 from markdown_it import MarkdownIt
@@ -15,6 +16,7 @@ from pygments.util import ClassNotFound
 
 from session_vault.chatgpt import VaultError
 from session_vault.conversation import Conversation
+from session_vault.rich import layout_plugin
 
 STATIC = Path(__file__).parent / "static"
 
@@ -30,6 +32,53 @@ def _highlight(code: str, language: str, _attrs: str) -> str:
 def markdown_engine() -> MarkdownIt:
     engine = MarkdownIt("commonmark", {"html": False, "highlight": _highlight}).enable("table")
     engine.use(dollarmath_plugin, allow_labels=False, allow_space=False)
+    engine.use(layout_plugin)
+
+    def protect_table_math(state):
+        lines = []
+        fence = None
+        for line in state.src.splitlines(keepends=True):
+            marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+            if marker:
+                value = marker[1]
+                if fence is None:
+                    fence = value
+                elif value[0] == fence[0] and len(value) >= len(fence):
+                    fence = None
+                lines.append(line)
+                continue
+            if fence is None and line.lstrip().startswith("|"):
+                # Table splitting precedes inline math parsing. Keep its bars in a cell.
+                segments = re.split(r"(`+[^`]*`+)", line)
+                for index in range(0, len(segments), 2):
+                    segments[index] = re.sub(
+                        r"\\\((.*?)\\\)|(?<!\\)\$(?!\$)(.+?)(?<!\\)\$",
+                        lambda match: re.sub(r"(?<!\\)\|", r"\\vert ", match[0]),
+                        segments[index],
+                    )
+                line = "".join(segments)
+            lines.append(line)
+        state.src = "".join(lines)
+
+    engine.core.ruler.after("normalize", "protect_table_math", protect_table_math)
+
+    def display_math(state, start_line, end_line, silent):
+        start = state.bMarks[start_line] + state.tShift[start_line]
+        if state.src[start : state.eMarks[start_line]].strip() != "\\[":
+            return False
+        for end in range(start_line + 1, end_line):
+            line = state.src[state.bMarks[end] : state.eMarks[end]].strip()
+            if line == "\\]":
+                if silent:
+                    return True
+                token = state.push("math_block", "math", 0)
+                token.content = state.getLines(start_line + 1, end, 0, False).strip()
+                token.map = [start_line, end + 1]
+                state.line = end + 1
+                return True
+        return False
+
+    engine.block.ruler.before("fence", "chatgpt_display_math", display_math)
 
     # ChatGPT commonly emits \(inline\) and \[display\] math instead of dollar delimiters.
     def math_rule(state, silent):

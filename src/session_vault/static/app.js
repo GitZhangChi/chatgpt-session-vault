@@ -6,7 +6,7 @@ const zh = {
   eyebrow:'让好想法，有处安放', headline:'留住每一段好对话。',
   intro:'将 ChatGPT 会话存成清晰好读的 PDF。\n保存在本地，也可以带去 Google Drive。',
   connectTitle:'连接你的 ChatGPT', cookieHelp:'从已登录 ChatGPT 的浏览器中，复制请求头里的 Cookie。',
-  cookieLabel:'ChatGPT Cookie',advanced:'高级选项',workspace:'工作空间 ID（可选）',connect:'连接 ChatGPT →',
+  proxy:'代理地址（可选）',cookieLabel:'ChatGPT Cookie',advanced:'高级选项',workspace:'工作空间 ID（可选）',connect:'连接 ChatGPT →',
   connected:'ChatGPT 已连接',disconnect:'断开并清除凭据',privacy:'Cookie 仅保存在这台电脑的内存中，不写入磁盘、浏览器存储或第三方服务器。',
   howCookie:'在哪里找到 Cookie？',cookie1:'打开 chatgpt.com 并登录。',
   cookie2:'打开开发者工具 → Network（网络），刷新页面。',cookie3:'选择发往 chatgpt.com 的请求 → Headers → Request Headers → Cookie，复制它的值。',
@@ -130,7 +130,7 @@ $('lang').addEventListener('click',()=>{language=language==='zh'?'en':'zh';trans
 $('connect-form').addEventListener('submit',async event=>{
   event.preventDefault();$('connect').disabled=true;$('notice').hidden=true;
   try {
-    await api('/api/connect',{method:'POST',body:JSON.stringify({cookie:$('cookie').value,user_agent:$('user-agent').value,account_id:$('account-id').value})});
+    await api('/api/connect',{method:'POST',body:JSON.stringify({cookie:$('cookie').value,user_agent:$('user-agent').value,account_id:$('account-id').value,proxy:$('proxy').value})});
     $('cookie').value='';connectionState(true);await loadChats();
   }catch(error){notify(error.message);}finally{$('connect').disabled=false;}
 });

@@ -52,3 +52,19 @@ def test_long_unicode_filenames_fit_filesystem(conversation_data):
     conversation_data["title"] = "中文😀" * 100
     result = parse_conversation(conversation_data, CID)
     assert len((result.filename + ".pdf").encode("utf-8")) < 255
+
+
+def test_reasoning_duration_is_not_a_missing_attachment(conversation_data):
+    conversation_data["mapping"]["m1"]["message"]["content"] = {
+        "content_type": "reasoning_recap",
+        "content": "Worked for 5s",
+    }
+    result = parse_conversation(conversation_data, CID)
+    assert result.messages[1].text == "Worked for 5s"
+    assert not result.warnings
+
+
+def test_custom_cards_have_explicit_warning(conversation_data):
+    conversation_data["mapping"]["m1"]["message"]["content"]["parts"] = ["<box>Card</box>"]
+    result = parse_conversation(conversation_data, CID)
+    assert any("static card/SVG subset" in w for w in result.warnings)

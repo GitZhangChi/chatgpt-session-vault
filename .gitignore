@@ -18,3 +18,9 @@ credentials*
 client_secret*
 token.json
 .DS_Store
+.private/
+*.har
+*.pdf
+*.zip
+*.pem
+*.key

@@ -25,6 +25,7 @@ class Login(BaseModel):
     cookie: str = Field(min_length=1, max_length=100_000, repr=False)
     user_agent: str = Field(default="", max_length=1000)
     account_id: str = Field(default="", max_length=100)
+    proxy: str = Field(default="", max_length=2000, repr=False)
 
 
 class ExportRequest(BaseModel):
@@ -80,7 +81,7 @@ def create_app(output: Path | None = None) -> FastAPI:
 
     @app.exception_handler(VaultError)
     async def vault_error(_request, error):
-        return JSONResponse({"error": str(error)}, status_code=400)
+        return JSONResponse({"error": str(error), "code": error.code}, status_code=400)
 
     @app.get("/")
     def index():
@@ -98,7 +99,9 @@ def create_app(output: Path | None = None) -> FastAPI:
     @app.post("/api/connect")
     def connect(body: Login):
         generation = state["generation"]
-        client = ChatGPTClient(parse_cookies(body.cookie), body.user_agent, body.account_id)
+        client = ChatGPTClient(
+            parse_cookies(body.cookie), body.user_agent, body.account_id, body.proxy
+        )
         client.authenticate()
         with lock:
             if generation != state["generation"]:

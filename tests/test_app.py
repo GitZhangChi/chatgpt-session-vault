@@ -37,6 +37,22 @@ def test_validation_errors_never_echo_secrets(tmp_path):
     assert secret not in response.text
 
 
+def test_api_returns_safe_access_error_code(monkeypatch, tmp_path):
+    from session_vault.chatgpt import VaultError
+
+    _, client = make_client(tmp_path)
+
+    def blocked(*_args):
+        raise VaultError("Browser verification required.", "cloudflare_challenge")
+
+    monkeypatch.setattr("session_vault.app.ChatGPTClient", blocked)
+    response = client.post(
+        "/api/connect", json={"cookie": "__Secure-next-auth.session-token=fictional"}
+    )
+    assert response.status_code == 400
+    assert response.json()["code"] == "cloudflare_challenge"
+
+
 def test_disconnect_cannot_be_undone_by_pending_oauth(monkeypatch, tmp_path):
     app, client = make_client(tmp_path)
     started, finish = threading.Event(), threading.Event()

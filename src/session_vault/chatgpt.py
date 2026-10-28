@@ -7,6 +7,7 @@ import json
 import re
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from curl_cffi import requests
@@ -16,6 +17,10 @@ ORIGIN = "https://chatgpt.com"
 
 class VaultError(Exception):
     """A safe, user-facing error that contains no remote response or credentials."""
+
+    def __init__(self, message: str, code: str = "vault_error"):
+        super().__init__(message)
+        self.code = code
 
 
 def parse_cookies(raw: str) -> dict[str, str]:
@@ -87,13 +92,36 @@ def iso_date(value: Any) -> str:
 
 
 class ChatGPTClient:
-    def __init__(self, cookies: dict[str, str], user_agent: str = "", account_id: str = ""):
+    def __init__(
+        self, cookies: dict[str, str], user_agent: str = "", account_id: str = "", proxy: str = ""
+    ):
         self.cookies = cookies
         self.user_agent = user_agent.strip()
         self.account_id = account_id.strip()
         if any(c in self.user_agent + self.account_id for c in "\r\n\x00"):
             raise VaultError("Invalid User-Agent or workspace ID.")
         self.token = ""
+        if proxy:
+            try:
+                parsed = urlsplit(proxy)
+                valid = (
+                    parsed.scheme in ("http", "https", "socks5", "socks5h")
+                    and parsed.hostname
+                    and parsed.port
+                    and not parsed.username
+                    and not parsed.password
+                    and not parsed.query
+                    and not parsed.fragment
+                    and parsed.path in ("", "/")
+                    and not any(ord(c) < 32 for c in proxy)
+                )
+            except ValueError:
+                valid = False
+            if not valid:
+                raise VaultError(
+                    "Proxy must be an HTTP(S)/SOCKS5 host:port URL without credentials or a path."
+                )
+        self.proxy = proxy or None
 
     def _get(self, path: str, params: dict | None = None) -> dict:
         headers = {"Accept": "application/json", "Referer": ORIGIN + "/"}
@@ -113,16 +141,41 @@ class ChatGPTClient:
                     cookies=self.cookies,
                     timeout=45,
                     allow_redirects=False,
+                    proxy=self.proxy,
                 )
         except requests.RequestsError:
             raise VaultError("Could not reach ChatGPT. Check your network and try again.") from None
         status = response.status_code
         if status in (401, 302, 307):
-            raise VaultError("Your ChatGPT session has expired. Sign in and paste a fresh Cookie.")
-        if status == 403:
             raise VaultError(
-                "ChatGPT refused this request (403). Refresh ChatGPT, copy fresh cookies and "
-                "the matching User-Agent, and use the same network as your browser."
+                "Your ChatGPT session has expired. Sign in and paste a fresh Cookie.",
+                "session_expired",
+            )
+        if status == 403:
+            headers = response.headers
+            challenge = headers.get("cf-mitigated", "").lower() == "challenge"
+            if not challenge and "text/html" in headers.get("content-type", "").lower():
+                challenge = any(
+                    marker in response.text[:20000].lower()
+                    for marker in (
+                        "cf-chl-",
+                        "challenge-platform",
+                        "just a moment",
+                    )
+                )
+            if challenge:
+                raise VaultError(
+                    "Cloudflare browser verification required (403). Open ChatGPT in your "
+                    "normal browser and complete any verification there. Then copy fresh cookies "
+                    "and the matching User-Agent, and use the same network/proxy. "
+                    "This is not proof of an expired session. Vault will not retry the challenge.",
+                    "cloudflare_challenge",
+                )
+            raise VaultError(
+                "ChatGPT denied access (403). Check the signed-in account, workspace and "
+                "conversation permissions. If your browser also cannot open it, "
+                "refresh your login.",
+                "access_denied",
             )
         if status == 429:
             raise VaultError("ChatGPT rate limit reached. Wait a few minutes before trying again.")
